@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
+using System.IO;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
@@ -11,12 +12,14 @@ public class MainManager : MonoBehaviour
     public Rigidbody Ball;
 
     public Text ScoreText;
+    public Text bestScoreText;
     public GameObject GameOverText;
     
     private bool m_Started = false;
     private int m_Points;
     
     private bool m_GameOver = false;
+    private SaveData data;
 
     
     // Start is called before the first frame update
@@ -36,6 +39,14 @@ public class MainManager : MonoBehaviour
                 brick.onDestroyed.AddListener(AddPoint);
             }
         }
+        string path = Application.persistentDataPath + "/savefile.json";
+        if (File.Exists(path))
+        {
+            string json = File.ReadAllText(path);
+            data = JsonUtility.FromJson<SaveData>(json);
+            bestScoreText.text = $"Best Score : {data.highScore} Name: {data.playerName}";
+        }
+
     }
 
     private void Update()
@@ -71,6 +82,27 @@ public class MainManager : MonoBehaviour
     public void GameOver()
     {
         m_GameOver = true;
+        string path = Application.persistentDataPath + "/savefile.json";
+        if (File.Exists(path))
+        {
+            string json = File.ReadAllText(path);
+            SaveData data = JsonUtility.FromJson<SaveData>(json);
+
+            if (m_Points > data.highScore)
+            {
+                data.highScore = m_Points;
+                data.playerName = GameManager.Instance.GetPlayerName();
+                string saveString = JsonUtility.ToJson(data);
+                File.WriteAllText(path, saveString);
+            }
+        }
+        else{
+            data = new SaveData();
+            data.highScore = m_Points;
+            data.playerName = GameManager.Instance.GetPlayerName();
+            string saveString = JsonUtility.ToJson(data);
+            File.WriteAllText(path, saveString);
+        }
         GameOverText.SetActive(true);
     }
 }
